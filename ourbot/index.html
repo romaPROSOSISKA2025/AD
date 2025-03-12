@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Отправка сообщения</title>
+    <style>
+      /* Градиентный фон для страницы */
+      body {
+          background: linear-gradient(to right, #ff7e5f, #feb47b); /* Добавляем плавный градиент */
+          background-size: cover;
+          transition: all 0.3s ease-in-out; /* Плавный переход */
+      }
+
+      /* Контейнер с формой */
+      .container {
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4); /* Добавляем тень вокруг контейнера */
+          border-radius: 15px; /* Округляем углы контейнера */
+      }
+
+      /* Усовершенствованное текстовое поле */
+      textarea {
+          background-color: #fff;
+          color: #333;
+          border-radius: 10px;
+          padding: 15px;
+          font-size: 1.1rem;
+          width: 100%;
+          resize: none;
+          box-sizing: border-box;
+          transition: all 0.3s ease-in-out; /* Плавный переход на фокус */
+      }
+
+      textarea:focus {
+          border: 2px solid #feb47b; /* Изменение цвета границы на фокус */
+          background-color: #fff;
+      }
+
+      /* Кнопка */
+      button {
+          background-color: #d4f20c;
+          border: none;
+          padding: 16px 32px;
+          font-size: 1.2rem;
+          border-radius: 30px;
+          cursor: pointer;
+          transition: background-color 0.3s ease; /* Плавный переход */
+      }
+
+      button:hover {
+          background-color: #bfd62b; /* Изменение цвета при наведении */
+      }
+
+      button:active {
+          background-color: #e36e53; /* Цвет при клике */
+      }
+
+      /* Адаптивные стили */
+      @media (max-width: 768px) {
+          .container {
+              padding: 20px;
+              max-width: 90%; /* Уменьшаем контейнер на мобильных */
+          }
+
+          textarea {
+              font-size: 1rem;
+              padding: 12px;
+          }
+
+          button {
+              font-size: 1rem;
+              padding: 12px 24px;
+          }
+      }
+
+      @media (max-width: 500px) {
+          body {
+              background: linear-gradient(to right, #ff7e5f, #feb47b); /* Плавный градиент */
+          }
+
+          h1 {
+              font-size: 1.5rem; /* Уменьшаем заголовок на маленьких экранах */
+          }
+
+          .container {
+              max-width: 100%;
+              padding: 20px;
+          }
+
+          textarea {
+              font-size: 0.9rem;
+          }
+
+          button {
+              font-size: 0.9rem;
+              padding: 10px 20px;
+          }
+      }
+
+    </style>
+</head>
+<body>
+
+    <h2>Отправить сообщение в Telegram</h2>
+    <textarea id="message" placeholder="Введите сообщение..."></textarea><br>
+    <button onclick="sendMessage()">Отправить</button>
+
+    <script>
+        function sendMessage() {
+            const botToken = "7647536224:AAFbdZzMQLwcK7yP-go0T14D5BbdbLY4WcU"; // Вставь сюда токен бота
+            const chatId = "6703843935"; // Вставь свой Telegram ID
+            const message = document.getElementById("message").value;
+
+            if (!message.trim()) {
+                alert("Введите сообщение!");
+                return;
+            }
+
+            const url = `https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(message)}`;
+
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.ok) {
+                        alert("Сообщение отправлено!");
+                        document.getElementById("message").value = "";
+                    } else {
+                        alert("Ошибка отправки!");
+                    }
+                })
+                .catch(error => alert("Ошибка сети!"));
+
+                const TelegramBot = require('node-telegram-bot-api');
+
+// Токен бота
+const token = '7647536224:AAFbdZzMQLwcK7yP-go0T14D5BbdbLY4WcU'; // Вставь сюда токен
+const bot = new TelegramBot(token, { polling: true });
+
+// Объект для хранения информации о пользователях и времени их последнего сообщения
+const users = {};
+
+// Функция для отправки сообщения с ником пользователя
+function sendMessageWithUsername(chatId, userName) {
+    bot.sendMessage(chatId, `Вы написали сообщение. Ваш ник в Telegram: @${userName}`);
+}
+
+// Команда "/start", которая отправляет приветственное сообщение
+bot.onText(/\/start/, (msg) => {
+    const chatId = msg.chat.id;
+    bot.sendMessage(chatId, 'Привет! Вы можете написать мне только один раз в день.!');
+});
+
+// Обработка текстовых сообщений
+bot.on('message', (msg) => {
+    const chatId = msg.chat.id;
+    const userId = msg.from.id;
+    const userName = msg.from.username;  // Получаем ник пользователя из данных
+
+    const currentDate = new Date();
+    const currentTimestamp = currentDate.getTime(); // Время в миллисекундах
+
+    if (!users[userId]) {
+        // Если пользователь еще не писал, разрешаем отправить сообщение
+        users[userId] = { lastMessage: currentTimestamp };  // Сохраняем время последнего сообщения
+        sendMessageWithUsername(chatId, userName);
+    } else {
+        const lastMessageTimestamp = users[userId].lastMessage;
+        const timeDifference = currentTimestamp - lastMessageTimestamp;
+
+        // Проверяем, прошло ли 24 часа
+        if (timeDifference > 86400000) { // 86400000 миллисекунд = 24 часа
+            users[userId].lastMessage = currentTimestamp;  // Обновляем время последнего сообщения
+            sendMessageWithUsername(chatId, userName);
+        } else {
+            // Если не прошло 24 часа, блокируем отправку сообщения
+            const remainingTime = 86400000 - timeDifference;
+            const hours = Math.floor(remainingTime / 3600000);
+            const minutes = Math.floor((remainingTime % 3600000) / 60000);
+            bot.sendMessage(chatId, `Вы можете написать только один раз в день. Пожалуйста, подождите еще ${hours} часов и ${minutes} минут.`);
+        }
+    }
+});
+
+        }
+    </script>
+
+</body>
+</html>
